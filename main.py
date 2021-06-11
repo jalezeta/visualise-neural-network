@@ -21,7 +21,7 @@ class Layer():
     def __intialise_neurons(self, number_of_neurons):
         neurons = []
         x = self.__calculate_left_margin_so_layer_is_centered(number_of_neurons)
-        for iteration in xrange(number_of_neurons):
+        for iteration in range(number_of_neurons):
             neuron = Neuron(x, self.y)
             neurons.append(neuron)
             x += horizontal_distance_between_neurons
@@ -49,12 +49,16 @@ class Layer():
         line = pyplot.Line2D((neuron1.x - x_adjustment, neuron2.x + x_adjustment), (neuron1.y - y_adjustment, neuron2.y + y_adjustment))
         pyplot.gca().add_line(line)
 
-    def draw(self):
-        for neuron in self.neurons:
+    def draw(self,sparsity = 0):
+        for index, neuron in enumerate(self.neurons):
             neuron.draw()
             if self.previous_layer:
-                for previous_layer_neuron in self.previous_layer.neurons:
-                    self.__line_between_two_neurons(neuron, previous_layer_neuron)
+                prev_n_neurons = len(self.previous_layer.neurons)
+                sparsity_max_index = max([val for connections in sparsity for val in connections])
+                assert (sparsity_max_index <= prev_n_neurons), "One of the sparsity connections is out of index"
+                for sparse_neuron_index in sparsity[index]:
+                    sparse_neuron = self.previous_layer.neurons[sparse_neuron_index]
+                    self.__line_between_two_neurons(neuron, sparse_neuron)
 
 
 class NeuralNetwork():
@@ -65,9 +69,14 @@ class NeuralNetwork():
         layer = Layer(self, number_of_neurons)
         self.layers.append(layer)
 
-    def draw(self):
+    def draw(self,sparsity):
+        sparsity_index = 0
         for layer in self.layers:
-            layer.draw()
+            if(layer.previous_layer):
+                layer.draw(sparsity[sparsity_index])
+                sparsity_index = sparsity_index + 1
+            else: 
+                layer.draw()
         pyplot.axis('scaled')
         pyplot.show()
 
@@ -79,5 +88,8 @@ if __name__ == "__main__":
     network = NeuralNetwork()
     network.add_layer(3)
     network.add_layer(4)
-    network.add_layer(1)
-    network.draw()
+    network.add_layer(2)
+    sparsity_layer0 = [[0,2],[0],[1,2],[0,2]]
+    sparsity_layer1 = [[0,2],[2,3]]
+    sparsities = [sparsity_layer0,sparsity_layer1]
+    network.draw(sparsities)
